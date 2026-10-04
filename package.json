@@ -1,0 +1,1 @@
+{"name":"tandem","version":"1.0.0","private":true,"scripts":{"start":"node server.js","test":"node --test test/server.test.js test/ui.test.js"},"dependencies":{"ws":"^8.18.0"},"devDependencies":{"jsdom":"^30.1.1"}}

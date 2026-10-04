@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Tandem — project workspace</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#f4f5f1;--pn:#fff;--ink:#14302b;--mut:#66766f;--ln:#dfe3dc;--ac:#1f6f5c;--wn:#e0861f;--bad:#c4452f;--ok:#2f8f5b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101a18;--pn:#182623;--ink:#e6efeb;--mut:#8da39b;--ln:#2a3d38;--ac:#4cc3a4}}
+:root[data-theme=dark]{--bg:#101a18;--pn:#182623;--ink:#e6efeb;--mut:#8da39b;--ln:#2a3d38;--ac:#4cc3a4}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--ink);font:15px/1.45 'Bricolage Grotesque',system-ui,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--ln);background:var(--pn);border-radius:8px;padding:6px 12px}
+button.p{background:var(--ac);color:#fff;border-color:var(--ac)}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.card:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+input,select,textarea{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:7px 9px;width:100%}
+#app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+aside{background:var(--ink);color:#e6efeb;padding:18px 14px;display:flex;flex-direction:column;gap:6px}
+aside h1{font-size:24px;font-weight:800;margin:0 0 10px;letter-spacing:-.5px}
+aside .nav{background:none;border:0;color:inherit;text-align:left;padding:7px 10px;border-radius:8px;opacity:.8}
+aside .nav.on{background:rgba(255,255,255,.14);opacity:1}
+aside .sm{font-size:12px;opacity:.7;margin-top:auto}
+main{padding:20px;min-width:0}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}.bar h2{margin:0;font-size:26px;font-weight:800;flex:1}
+.pill{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--bg);border:1px solid var(--ln)}
+.live{color:var(--ok)}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.col{background:color-mix(in srgb,var(--ln) 40%,transparent);border-radius:12px;padding:10px;min-height:200px}
+.col h3{margin:2px 4px 10px;font-size:15px}
+.card{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:10px;margin-bottom:8px;cursor:grab}
+.card.fl{animation:fl 1.6s}@keyframes fl{from{background:#f6d9a8}}@media(prefers-reduced-motion:reduce){.card.fl{animation:none}}
+.card small{color:var(--mut)}.od{color:var(--bad);font-weight:600}
+.prog{height:8px;background:var(--ln);border-radius:9px;overflow:hidden}.prog i{display:block;height:100%;background:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:14px}
+.big{font-size:38px;font-weight:800;line-height:1}
+.row{display:flex;gap:8px;align-items:center;margin:5px 0}.row>span:first-child{width:90px;color:var(--mut)}
+dialog{border:1px solid var(--ln);border-radius:14px;background:var(--pn);color:var(--ink);width:min(620px,94vw);padding:18px;max-height:92vh}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.f{display:grid;gap:4px;margin-bottom:10px}.f label{font-size:13px;color:var(--mut)}.two{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.ban{background:#fbe9cc;color:#5a3500;border-radius:8px;padding:8px 10px;margin-bottom:10px}
+.cf{border:2px solid var(--wn);border-radius:10px;padding:10px;margin-bottom:10px}
+.cm{border-top:1px solid var(--ln);padding:6px 0;font-size:14px}
+#toast{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:grid;gap:6px;z-index:9}
+#toast div{background:var(--ink);color:#fff;padding:8px 12px;border-radius:8px;max-width:300px}
+@media(max-width:760px){#app{grid-template-columns:1fr}aside{flex-direction:row;flex-wrap:wrap;align-items:center}aside .sm{display:none}.cols{grid-template-columns:1fr}}
+</style></head><body>
+<div id="app"><aside id="side"></aside><main id="main"></main></div>
+<div id="toast" aria-live="polite"></div><dialog id="dlg"></dialog>
+<script>
+const KEY='tandem:v1',ST=['todo','doing','done'],SL={todo:'To do',doing:'In progress',done:'Done'};
+const USERS=['Asha','Ben','Chitra','Dev'];
+const tab=Math.random().toString(36).slice(2,7);
+let me=USERS[Math.floor(Math.random()*USERS.length)],view='dash',D,peers={},open=null,flash={};
+let ws,rid=0,pend={},cv=0;
+function conn(){ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+ ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.rid&&pend[m.rid]){pend[m.rid](m);delete pend[m.rid];return}
+  if(m.k==='state'){D=m.D;(m.ids||[]).forEach(i=>flash[i]=1);if(m.by&&m.by!==me)toast(m.by+' made a change');render();if(open)checkOpen()}
+  if(m.k==='presence'){peers=m.n;head()}};
+ ws.onclose=()=>{const l=$('#live');if(l)l.textContent='○ reconnecting…';setTimeout(conn,1500)}}
+const rpc=m=>new Promise(r=>{if(!ws||ws.readyState!==1)return r({err:'offline'});m.rid=++rid;m.by=me;pend[m.rid]=r;ws.send(JSON.stringify(m))});
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const day=n=>new Date(Date.now()+n*864e5).toISOString().slice(0,10);
+function seed(){return{pid:2,tid:5,projects:[{id:1,name:'Website relaunch'},{id:2,name:'Mobile app v2'}],
+ tasks:[{id:1,pid:1,title:'Design homepage',desc:'Hero and pricing section',status:'doing',assignee:'Asha',due:day(2),v:1,files:[],comments:[]},
+ {id:2,pid:1,title:'Set up CI pipeline',desc:'',status:'todo',assignee:'Ben',due:day(-1),v:1,files:[],comments:[]},
+ {id:3,pid:1,title:'Write launch copy',desc:'',status:'done',assignee:'Chitra',due:day(-3),v:1,files:[],comments:[]},
+ {id:4,pid:2,title:'Push notifications',desc:'',status:'todo',assignee:'Dev',due:day(6),v:1,files:[],comments:[]}],log:[]}}
+function load(){}
+function save(){return true}
+function note(){}
+function sync(){}
+function toast(t){const d=document.createElement('div');d.textContent=t;$('#toast').append(d);setTimeout(()=>d.remove(),3000)}
+const T=id=>D.tasks.find(t=>t.id==id);
+const F=['title','desc','status','assignee','due'];
+/* Server performs the field-level three-way merge atomically; client sends the snapshot it started from. */
+async function commit(id,base,ch,pick={}){const b={};F.forEach(k=>b[k]=base[k]);return rpc({op:'commit',id,base:b,ch,pick,seenV:cv})}
+function stat(pid){const ts=D.tasks.filter(t=>t.pid==pid),d=ts.filter(t=>t.status==='done').length;return{n:ts.length,d,pct:ts.length?Math.round(d/ts.length*100):0,od:ts.filter(t=>isOd(t)).length}}
+const isOd=t=>t.status!=='done'&&t.due&&t.due<day(0);
+function head(){const n=typeof peers==='number'?peers:1;const e=$('#live');if(e)e.textContent='● '+n+' online'}
+function side(){$('#side').innerHTML=`<h1>Tandem</h1><button class="nav ${view==='dash'?'on':''}" data-v="dash">Dashboard</button>`+
+ D.projects.map(p=>`<button class="nav ${view==p.id?'on':''}" data-v="${p.id}">${esc(p.name)}</button>`).join('')+
+ `<button class="nav" id="np">+ New project</button><div class="sm">Signed in as<br><select id="who">${USERS.map(u=>`<option ${u===me?'selected':''}>${u}</option>`).join('')}</select><br><br>Open this page in a second tab to see live sync.</div>`;
+ $('#side').onclick=e=>{const b=e.target.closest('.nav');if(!b)return;if(b.id==='np'){const n=prompt('Project name');if(n&&n.trim()){rpc({op:'project',name:n.trim()}).then(r=>{if(r.id){view=r.id;render()}})}return}view=b.dataset.v==='dash'?'dash':+b.dataset.v;render()};
+ $('#who').onchange=e=>{me=e.target.value;render()}}
+function dash(){const all=D.tasks,od=all.filter(isOd).length,c=s=>all.filter(t=>t.status===s).length;
+ return`<div class="bar"><h2>Dashboard</h2><span class="pill live" id="live"></span></div><div class="grid">
+ <div class="pn"><div class="big">${all.length?Math.round(c('done')/all.length*100):0}%</div>overall complete<div class="prog" style="margin-top:8px"><i style="width:${all.length?c('done')/all.length*100:0}%"></i></div></div>
+ <div class="pn"><div class="big ${od?'od':''}">${od}</div>overdue tasks</div>
+ <div class="pn"><b>By status</b>${ST.map(s=>`<div class="row"><span>${SL[s]}</span><b>${c(s)}</b></div>`).join('')}</div>
+ <div class="pn"><b>Workload</b>${USERS.map(u=>`<div class="row"><span>${u}</span><b>${all.filter(t=>t.assignee===u&&t.status!=='done').length}</b> open</div>`).join('')}</div>
+ <div class="pn"><b>Projects</b>${D.projects.map(p=>{const s=stat(p.id);return`<div style="margin:8px 0">${esc(p.name)} <small>${s.d}/${s.n}${s.od?` · <span class=od>${s.od} overdue</span>`:''}</small><div class="prog"><i style="width:${s.pct}%"></i></div></div>`}).join('')}</div>
+ <div class="pn"><b>Activity</b>${D.log.slice(0,8).map(l=>`<div class="cm"><b>${esc(l.by)}</b> ${esc(l.msg)} <small>${new Date(l.t).toLocaleTimeString()}</small></div>`).join('')||'<small>No activity yet.</small>'}</div></div>`}
+function board(p){const s=stat(p.id);
+ return`<div class="bar"><h2>${esc(p.name)}</h2><span class="pill">${s.pct}% done</span><span class="pill live" id="live"></span><button class="p" id="nt">+ Add task</button></div>
+ <div class="prog" style="margin-bottom:16px"><i style="width:${s.pct}%"></i></div><div class="cols">`+ST.map(st=>`<div class="col" data-s="${st}"><h3>${SL[st]}</h3>`+
+ D.tasks.filter(t=>t.pid==p.id&&t.status===st).map(t=>`<div class="card ${flash[t.id]?'fl':''}" draggable="true" tabindex="0" data-id="${t.id}"><b>${esc(t.title)}</b><br><small>${esc(t.assignee||'Unassigned')} · <span class="${isOd(t)?'od':''}">${t.due?(isOd(t)?'overdue ':'due ')+t.due:'no deadline'}</span>${t.files.length?' · 📎'+t.files.length:''}${t.comments.length?' · 💬'+t.comments.length:''}</small></div>`).join('')+`</div>`).join('')+'</div>'}
+function render(){side();const p=D.projects.find(x=>x.id==view);$('#main').innerHTML=p?board(p):dash();head();flash={};
+ if(p){$('#nt').onclick=async()=>{const r=await rpc({op:'task',pid:p.id});if(r.id)openTask(r.id);else toast('Offline — task not created')};
+ document.querySelectorAll('.card').forEach(c=>{c.onclick=()=>openTask(c.dataset.id);c.onkeydown=e=>{if(e.key==='Enter')openTask(c.dataset.id)};c.ondragstart=e=>e.dataTransfer.setData('t',c.dataset.id)});
+ document.querySelectorAll('.col').forEach(c=>{c.ondragover=e=>e.preventDefault();c.ondrop=async e=>{e.preventDefault();const id=e.dataTransfer.getData('t'),t=T(id);if(!t||t.status===c.dataset.s)return;
+  const r=await commit(id,{...t},{status:c.dataset.s});if(r.err)return toast(r.err==='offline'?'Offline — move not saved':r.err);if(r.conf)cv=r.v;if(r.conf){toast('Conflict on this task — resolve it');openTask(id,{status:c.dataset.s})}render()}})}}
+/* Task dialog */
+let base=null,stale=false;
+function openTask(id,pre){load();const t=T(id);if(!t)return;open=id;base=JSON.parse(JSON.stringify(t));stale=false;drawDlg(pre);$('#dlg').showModal()}
+function drawDlg(pre,conf){const t=base;const v=k=>pre&&k in pre?pre[k]:t[k];
+ const cur=T(open);
+ $('#dlg').innerHTML=`<div id="bn"></div><div class="f"><label>Title</label><input id="e_title" value="${esc(v('title'))}"></div>
+ <div class="f"><label>Description</label><textarea id="e_desc" rows="2">${esc(v('desc'))}</textarea></div>
+ <div class="two"><div class="f"><label>Status</label><select id="e_status">${ST.map(s=>`<option value="${s}" ${v('status')===s?'selected':''}>${SL[s]}</option>`).join('')}</select></div>
+ <div class="f"><label>Assignee</label><select id="e_assignee"><option value="">Unassigned</option>${USERS.map(u=>`<option ${v('assignee')===u?'selected':''}>${u}</option>`).join('')}</select></div>
+ <div class="f"><label>Deadline</label><input type="date" id="e_due" value="${v('due')}"></div></div>
+ <div id="cf"></div>
+ <div class="row"><button class="p" id="sv">Save changes</button><button id="cl">Close</button><button id="sim" title="Demo: a teammate edits this task right now">Simulate teammate edit</button><small style="margin-left:auto">version ${t.v}</small></div>
+ <div class="f"><label>Files (max 150 KB each)</label><input type="file" id="fl">${(cur.files||[]).map(f=>`<a href="${f.data}" download="${esc(f.name)}">📎 ${esc(f.name)}</a>`).join(' ')}</div>
+ <div class="f"><label>Comments</label>${cur.comments.map(c=>`<div class="cm"><b>${esc(c.by)}</b>: ${esc(c.text)}</div>`).join('')}<div class="row"><input id="ct" placeholder="Write a comment"><button id="ca">Post</button></div></div>`;
+ $('#cl').onclick=()=>{open=null;$('#dlg').close()};
+ $('#sv').onclick=()=>doSave();
+ $('#sim').onclick=()=>rpc({op:'sim',id:open});
+ $('#ca').onclick=async()=>{const x=$('#ct').value.trim();if(!x)return;const r=await rpc({op:'comment',id:open,text:x});if(r.err)return toast(r.err==='offline'?'Offline — comment not sent':r.err);drawDlg(readForm())};
+ $('#fl').onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>150000)return toast('File too large (150 KB max)');const r=new FileReader();r.onload=async()=>{const x=await rpc({op:'file',id:open,name:f.name,data:r.result});if(x.err)return toast(x.err);drawDlg(readForm())};r.readAsDataURL(f)};
+ if(conf)showConf(conf);checkOpen()}
+function readForm(){const o={};F.forEach(k=>o[k]=$('#e_'+k).value);return o}
+function checkOpen(){const cur=T(open),b=$('#bn');if(!cur||!b)return;if(cur.v!==base.v){const ks=F.filter(k=>cur[k]!==base[k]);b.innerHTML=`<div class="ban"><b>This task changed while you were editing</b> (now v${cur.v}${ks.length?'; changed: '+ks.join(', '):''}). Saving merges your edits; real clashes will ask you to choose. <button id="rl">Discard mine &amp; reload</button></div>`;$('#rl').onclick=()=>{base=JSON.parse(JSON.stringify(cur));drawDlg()}}else b.innerHTML=''}
+async function doSave(pick){const f=readForm(),ch={};F.forEach(k=>{if(f[k]!==base[k])ch[k]=f[k]});
+ if(!Object.keys(ch).length){toast('No changes to save');return}
+ const r=await commit(open,base,ch,pick);
+ if(r.err){toast(r.err==='offline'?'Offline — your edit was not saved; retry once reconnected':r.err);return}
+ if(r.gone){toast('Task was deleted');$('#dlg').close();return}
+ if(r.conf){cv=r.v;showConf(r.conf);return}
+ base=JSON.parse(JSON.stringify(r.ok));toast('Saved — merged with latest');drawDlg();render()}
+function showConf(conf){$('#cf').innerHTML=`<div class="cf"><b>Same field edited by someone else</b><p style="margin:4px 0">Pick which value to keep. Nothing is overwritten until you choose.</p>`+conf.map(c=>`<div class="row"><span>${c.k}</span><label><input type="radio" name="p_${c.k}" value="theirs" checked style="width:auto"> Theirs: ${esc(c.theirs||'(empty)')}</label><label><input type="radio" name="p_${c.k}" value="mine" style="width:auto"> Mine: ${esc(c.mine||'(empty)')}</label></div>`).join('')+`<button class="p" id="rs">Apply choices</button></div>`;
+ $('#rs').onclick=()=>{const pick={};conf.forEach(c=>pick[c.k]=document.querySelector(`input[name=p_${c.k}]:checked`).value);doSave(pick)}}
+$('#dlg').addEventListener('close',()=>{open=null});
+conn();
+</script></body></html>

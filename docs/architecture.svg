@@ -1,0 +1,14 @@
+<svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="14">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#14302b"/></marker></defs>
+<rect width="760" height="330" fill="#f4f5f1"/>
+<g fill="#fff" stroke="#14302b" stroke-width="1.5"><rect x="20" y="40" width="170" height="90" rx="10"/><rect x="20" y="190" width="170" height="90" rx="10"/><rect x="300" y="30" width="250" height="260" rx="12" fill="#e7efe9"/><rect x="590" y="110" width="150" height="100" rx="10"/></g>
+<g fill="#14302b" text-anchor="middle"><text x="105" y="75" font-weight="700">Browser A</text><text x="105" y="97">UI · sends operations</text><text x="105" y="115">renders snapshots</text>
+<text x="105" y="225" font-weight="700">Browser B</text><text x="105" y="247">same client, other user</text>
+<text x="425" y="58" font-weight="700">Node server (server.js)</text>
+<text x="665" y="150" font-weight="700">State store</text><text x="665" y="172">JSON file (demo)</text><text x="665" y="190">Postgres (schema.sql)</text></g>
+<g fill="#fff" stroke="#1f6f5c" stroke-width="1.5"><rect x="320" y="75" width="210" height="60" rx="8"/><rect x="320" y="155" width="210" height="50" rx="8"/><rect x="320" y="225" width="210" height="50" rx="8"/></g>
+<g fill="#14302b" text-anchor="middle" font-size="13"><text x="425" y="98">1. validate operation</text><text x="425" y="118">2. versioned 3-way merge (atomic)</text>
+<text x="425" y="185">3. persist, then broadcast snapshot</text><text x="425" y="255">4. reply to sender (ok / conflict)</text></g>
+<g stroke="#14302b" stroke-width="1.8" fill="none" marker-end="url(#a)" marker-start="url(#a)"><path d="M190 85H300"/><path d="M190 235H300"/><path d="M550 160H590"/></g>
+<text x="245" y="76" text-anchor="middle" font-size="12" fill="#14302b">WebSocket</text><text x="245" y="226" text-anchor="middle" font-size="12" fill="#14302b">WebSocket</text>
+</svg>
