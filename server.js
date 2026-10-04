@@ -53,4 +53,11 @@ function create(file){
  return{srv,apply,get D(){return D}};
 }
 module.exports={create};
-if(require.main===module){const port=process.env.PORT||3000;create(process.env.DATA_FILE||path.join(__dirname,'data.json')).srv.listen(port,()=>console.log('Tandem on http://localhost:'+port))}
+if(require.main===module){
+  const port=process.env.PORT||3000;
+  create(process.env.DATA_FILE||path.join(__dirname,'data.json')).srv.listen(
+    port,
+    '0.0.0.0',
+    ()=>console.log('Tandem on port '+port)
+  );
+}
